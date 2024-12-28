@@ -35,6 +35,7 @@ int calcDays(sys_days date1, sys_days date2) {
 }
 
 void Flush() {
+    records.clear();
     setlocale(LC_ALL, "ru");
     interations = 1;
     listNum = 1;
