@@ -11,18 +11,13 @@ using namespace std;
 using namespace std::chrono;
 using namespace std::chrono_literals;
 
-int interations = 0;
-int listNum = 1;
+int interations;
 
 struct VocRecords {
     string fullName;
     sys_days startDate;
     sys_days endDate;
     int days;
-
-    bool operator<(const VocRecords& other) const {
-        return fullName < other.fullName ;
-    }
 };
 
 vector<VocRecords> records;
@@ -43,7 +38,6 @@ static void Flush() {
     printedNames.clear();
     setlocale(LC_ALL, "ru");
     interations = 0;
-    listNum = 1;
     fstream f("C:\\Users\\User\\Desktop\\Base.txt", ios::out);
     if (!f.is_open()) {
         cerr << "Error" << endl;
@@ -52,7 +46,7 @@ static void Flush() {
     cout << "Файл очищен!" << endl;
 }
 
-static void inputInfoIntoFile() {
+static void inputInfoIntoFile(int list) {
     setlocale(LC_ALL, "ru");
     int countDays;
 
@@ -76,7 +70,7 @@ static void inputInfoIntoFile() {
         cerr << "Error opening" << endl;
         return;
     }
-    outFile << "----------Запись номер: " << listNum <<"----------" << endl;
+    outFile << "----------Запись номер: " << list <<"----------" << endl;
     outFile << "ФИО: " << fulName << endl;
     outFile << "Дата ухода в отпуск: " << startDate << endl;
     outFile << "Дата выхода из отпуска: " << endDate << endl;
@@ -84,7 +78,6 @@ static void inputInfoIntoFile() {
     outFile << "---------------------------" << endl;
     outFile << endl;
     outFile.close();
-    listNum++;
     interations++;
     cout << endl;
 }
@@ -95,6 +88,7 @@ static bool isDateInRange(sys_days VoidDate, sys_days startDate, sys_days endDat
 
 class getInfoFromBase {
 public:
+    int listNum;
     void getinfoPerQ() {
         setlocale(LC_ALL, "ru");
 
@@ -148,6 +142,7 @@ public:
             }
         }
     }
+
     void getAllRecords() {
         ifstream fromFile("C:\\Users\\User\\Desktop\\Base.txt");
         if (!fromFile.is_open()) {
@@ -176,6 +171,22 @@ public:
             }
         }
     }
+
+    int getList() {
+        string line;
+        ifstream list("C:\\Users\\User\\Desktop\\Base.txt");
+        if (list.peek() == EOF) {
+            listNum = 0;
+        }
+        else {
+            while (getline(list,line)) {
+                if (line.find("Запись номер: ") != string::npos) {
+                    listNum = stoi(line.substr(line.find(":") + 2, line.find("-") - 1));
+                }
+            }
+        }
+        return listNum;
+    }
 };
 
 int main()
@@ -183,6 +194,7 @@ int main()
     setlocale(LC_ALL, "ru");
     bool state = true;
     int menu;
+    int lstN;
     do {
         cout << "1. Сделать запись" << endl;
         cout << "2. Очистить базу данных" << endl;
@@ -194,13 +206,17 @@ int main()
         {
         case 1:
             int countInputs;
+            interations = 0;
+            getInfoFromBase list;
             cout << "Сколько записей вы хотите сделать: "; cin >> countInputs;
             cin.ignore();
             cout << endl;
             do {
-                cout << "Запись номер: " << listNum;
+                lstN = list.getList() + 1;
+                cout << "Запись номер: " << lstN;
                 cout << endl;
-                inputInfoIntoFile();
+                inputInfoIntoFile(lstN);
+                lstN++;
             } while (interations < countInputs);
             break;
         case 2:
