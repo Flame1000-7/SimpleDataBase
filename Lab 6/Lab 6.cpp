@@ -20,26 +20,32 @@ struct VocRecords {
     sys_days endDate;
     int days;
 
+    bool operator<(const VocRecords& other) const {
+        return fullName < other.fullName ;
+    }
 };
 
 vector<VocRecords> records;
+set <string> printedNames;
 
-sys_days splitDate(const string& str) {
+static sys_days splitDate(const string& str) {
     int d, m, y;
     sscanf_s(str.c_str(), "%d.%d.%d", &d, &m, &y);
     return year(y) / month(m) / day(d);
 }
 
-int calcDays(sys_days date1, sys_days date2) {
+static int calcDays(sys_days date1, sys_days date2) {
     return (date2 - date1).count();
 }
 
-void Flush() {
+static void Flush() {
     records.clear();
+    printedNames.clear();
+    nonRepeat.clear();
     setlocale(LC_ALL, "ru");
-    interations = 1;
+    interations = 0;
     listNum = 1;
-    fstream f("C:\\Users\\Kolip\\Desktop\\Base.txt", ios::out);
+    fstream f("C:\\Users\\User\\Desktop\\Base.txt", ios::out);
     if (!f.is_open()) {
         cerr << "Error" << endl;
     }
@@ -47,7 +53,7 @@ void Flush() {
     cout << "Файл очищен!" << endl;
 }
 
-void inputInfoIntoFile() {
+static void inputInfoIntoFile() {
     setlocale(LC_ALL, "ru");
     int countDays;
 
@@ -66,7 +72,7 @@ void inputInfoIntoFile() {
 
     countDays = calcDays(splitDate(startDate), splitDate(endDate));
 
-    ofstream outFile("C:\\Users\\Kolip\\Desktop\\Base.txt", ios::app);
+    ofstream outFile("C:\\Users\\User\\Desktop\\Base.txt", ios::app);
     if (!outFile) {
         cerr << "Error opening" << endl;
         return;
@@ -84,58 +90,94 @@ void inputInfoIntoFile() {
     cout << endl;
 }
 
-bool isDateInRange(sys_days VoidDate, sys_days startDate, sys_days endDate) {
+static bool isDateInRange(sys_days VoidDate, sys_days startDate, sys_days endDate) {
     return VoidDate >= startDate && VoidDate <= endDate;
 }
 
-void getinfoFromBase() {
-    setlocale(LC_ALL, "ru");
+class getInfoFromBase {
+public:
+    void getinfoPerQ() {
+        setlocale(LC_ALL, "ru");
 
-    string voidDate;
+        string voidDate;
 
-    cout << "Введите дату для запроса(ДД.ММ.ГГГГ): "; cin >> voidDate;
-    cout << endl;
-    if (voidDate != "") {
-        ifstream fromFile("C:\\Users\\Kolip\\Desktop\\Base.txt");
+        cout << "Введите дату для запроса(ДД.ММ.ГГГГ): "; cin >> voidDate;
+        cout << endl;
+        if (voidDate != "") {
+                ifstream fromFile("C:\\Users\\User\\Desktop\\Base.txt");
+                if (!fromFile.is_open()) {
+                    cerr << "Error";
+                    return;
+                }
+                
+                string line;
+
+                while (getline(fromFile, line)) {
+                    if (line.find("ФИО: ") != string::npos) {
+                        VocRecords currentRecord;
+                        currentRecord.fullName = line.substr(line.find(":") + 2);
+                        while (getline(fromFile, line)) {
+                            if (line.find("Дата ухода в отпуск: ") != string::npos) {
+                                currentRecord.startDate = splitDate(line.substr(line.find(":") + 2));
+                            }
+                            else if (line.find("Дата выхода из отпуска: ") != string::npos) {
+                                currentRecord.endDate = splitDate(line.substr(line.find(":") + 2));
+                                records.push_back(currentRecord);
+                                break;
+                            }
+                        }
+                    }
+                }
+
+            sys_days inputDate = splitDate(voidDate);
+            cout << "Сотрудники в отпуске на " << voidDate << ":" << endl;
+            cout << endl;
+            
+            bool found = false;
+            for (const auto& record : records) {
+                if (isDateInRange(inputDate, record.startDate, record.endDate)) {
+                    if (printedNames.find(record.fullName) == printedNames.end()) {
+                        cout << record.fullName << " - Дата выхода на работу: " << record.endDate << endl;
+                        cout << endl;
+                        printedNames.insert(record.fullName);
+                        found = true;
+                    }
+                }
+            }
+            if (!found) {
+                cout << "Никто не в отпуске на эту дату." << endl;
+            }
+        }
+    }
+    void getAllRecords() {
+        ifstream fromFile("C:\\Users\\User\\Desktop\\Base.txt");
         if (!fromFile.is_open()) {
             cerr << "Error";
             return;
         }
-        VocRecords currentRecord;
-        string line;
-        while (getline(fromFile, line)) {
-            if (line.find("ФИО: ") != string::npos) {
-                currentRecord.fullName = line.substr(line.find(":") + 2);
-            }
-            else if (line.find("Дата ухода в отпуск: ") != string::npos) {
-                currentRecord.startDate = splitDate(line.substr(line.find(":") + 2));
-            }
-            else if (line.find("Дата выхода из отпуска: ") != string::npos) {
-                currentRecord.endDate = splitDate(line.substr(line.find(":") + 2));
-            }
-            records.push_back(currentRecord);
-        }
-        fromFile.close();
-        sys_days inputDate = splitDate(voidDate);
-        cout << "Сотрудники в отпуске на " << voidDate << ":" << endl;
-        cout << endl;
-        set <string> printedNames;
-        bool found = false;
-        for (const auto& record : records) {
-            if (isDateInRange(inputDate, record.startDate, record.endDate)) {
-                if (printedNames.find(record.fullName) == printedNames.end()) {
-                    cout << record.fullName << endl;
-                    cout << endl;
-                    printedNames.insert(record.fullName);
-                    found = true;
+        else {
+            string line;
+            while (getline(fromFile,line)) {
+                if (line.find("Запись номер: ") != string::npos) {
+                    cout << line;
                 }
+                else if (line.find("ФИО: ") != string::npos) {
+                    cout << line;
+                }
+                else if (line.find("Дата ухода в отпуск: ") != string::npos) {
+                    cout << line;
+                }
+                else if (line.find("Дата выхода из отпуска: ") != string::npos) {
+                    cout << line;
+                }
+                else if (line.find("-") != string::npos) {
+                    cout << line;
+                }
+                cout << endl;
             }
-        }
-        if (!found) {
-            cout << "Никто не в отпуске на эту дату." << endl;
         }
     }
-}
+};
 
 int main()
 {
@@ -166,7 +208,23 @@ int main()
             Flush();
             break;
         case 3:
-            getinfoFromBase();
+            getInfoFromBase getInfo;
+            int SecondaryMenu;
+            cout << "1. Получить запись по запросу" << endl;
+            cout << "2. Получить все записи" << endl;
+            cout << "Ваш выбор: ";cin >> SecondaryMenu;
+            switch (SecondaryMenu)
+            {
+            case 1:
+                getInfo.getinfoPerQ();
+                break;
+            case 2:
+                getInfo.getAllRecords();
+                break;
+            default:
+                cerr << "Error state";
+                break;
+            }
             break;
         case 4:
             cout << endl;
