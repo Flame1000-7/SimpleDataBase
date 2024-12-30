@@ -41,7 +41,6 @@ static int calcDays(sys_days date1, sys_days date2) {
 static void Flush() {
     records.clear();
     printedNames.clear();
-    nonRepeat.clear();
     setlocale(LC_ALL, "ru");
     interations = 0;
     listNum = 1;
